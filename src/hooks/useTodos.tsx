@@ -1,5 +1,5 @@
 import React from 'react';
-import { TODO_FILTERS } from '../consts';
+import { TODO_FILTERS, TODOS_ACTIONS } from '../consts';
 import { TodoList, type FilterValue } from '../types/todo';
 import { mockedToDos } from '../utils/mocks';
 
@@ -20,21 +20,21 @@ const initialState = {
 };
 
 type Action =
-	| { type: 'INIT'; payload: { todos: TodoList } } // init state
-	| { type: 'TOGGLE_COMPLETED'; payload: { id: string; completed: boolean } }
-	| { type: 'FILTER_CHANGE'; payload: { filter: FilterValue } }
-	| { type: 'REMOVE'; payload: { id: string } }
-	| { type: 'ADD'; payload: { title: string } }
-	| { type: 'REMOVE_ALL_COMPLETED' };
+	| { type: TODOS_ACTIONS.INIT; payload: { todos: TodoList } } // init state
+	| { type: TODOS_ACTIONS.TOGGLE_COMPLETED; payload: { id: string; completed: boolean } }
+	| { type: TODOS_ACTIONS.FILTER_CHANGE; payload: { filter: FilterValue } }
+	| { type: TODOS_ACTIONS.REMOVE; payload: { id: string } }
+	| { type: TODOS_ACTIONS.ADD; payload: { title: string } }
+	| { type: TODOS_ACTIONS.REMOVE_ALL_COMPLETED };
 
 //#region REDUCER
 const reducer = (state: State, action: Action): State => {
-	if ('INIT' === action.type) {
+	if (TODOS_ACTIONS.INIT === action.type) {
 		const { todos } = action.payload;
 		return { ...state, todos };
 	}
 
-	if ('TOGGLE_COMPLETED' === action.type) {
+	if (TODOS_ACTIONS.TOGGLE_COMPLETED === action.type) {
 		const { id, completed } = action.payload;
 
 		const newTodos = state.todos.map((todo) => {
@@ -54,7 +54,7 @@ const reducer = (state: State, action: Action): State => {
 		};
 	}
 
-	if ('FILTER_CHANGE' === action.type) {
+	if (TODOS_ACTIONS.FILTER_CHANGE === action.type) {
 		const { filter } = action.payload;
 		return {
 			...state,
@@ -62,7 +62,7 @@ const reducer = (state: State, action: Action): State => {
 		};
 	}
 
-	if ('REMOVE' === action.type) {
+	if (TODOS_ACTIONS.REMOVE === action.type) {
 		const { id } = action.payload;
 		return {
 			...state,
@@ -70,7 +70,7 @@ const reducer = (state: State, action: Action): State => {
 		};
 	}
 
-	if ('ADD' === action.type) {
+	if (TODOS_ACTIONS.ADD === action.type) {
 		const { title } = action.payload;
 		const newTodo = {
 			id: crypto.randomUUID(),
@@ -84,7 +84,7 @@ const reducer = (state: State, action: Action): State => {
 		};
 	}
 
-	if ('REMOVE_ALL_COMPLETED' === action.type) {
+	if (TODOS_ACTIONS.REMOVE_ALL_COMPLETED === action.type) {
 		const newTodos = state.todos.filter((todo) => !todo.completed);
 		return {
 			...state,
@@ -108,25 +108,25 @@ export const useTodos = (): {
 	handleAdd: (title: string) => void;
 	handleRemoveAllCompleted: () => void;
 } => {
-	const [{ todos, filterSelected }, dispatch] = React.useReducer(reducer, initialState);
+	const [state, dispatch] = React.useReducer(reducer, initialState);
+	const { todos, filterSelected } = state;
 
 	// handlers
-	const toggleComplete = (id: string, completed: boolean) =>
-		dispatch({ type: 'TOGGLE_COMPLETED', payload: { id, completed } });
-
 	const handleChangeFilter = (filter: FilterValue) => {
-		dispatch({ type: 'FILTER_CHANGE', payload: { filter } });
+		dispatch({ type: TODOS_ACTIONS.FILTER_CHANGE, payload: { filter } });
 		const params = new URLSearchParams(window.location.search);
 		params.set('filter', filter);
 		window.history.pushState({}, '', `${window.location.pathname}?${params.toString()}`);
 	};
 
-	const handleRemove = (id: string) => dispatch({ type: 'REMOVE', payload: { id } });
-	const handleAdd = (title: string) => dispatch({ type: 'ADD', payload: { title } });
-	const handleRemoveAllCompleted = () => dispatch({ type: 'REMOVE_ALL_COMPLETED' });
+	const handleRemove = (id: string) => dispatch({ type: TODOS_ACTIONS.REMOVE, payload: { id } });
+	const handleAdd = (title: string) => dispatch({ type: TODOS_ACTIONS.ADD, payload: { title } });
+	const handleRemoveAllCompleted = () => dispatch({ type: TODOS_ACTIONS.REMOVE_ALL_COMPLETED });
+	const toggleComplete = (id: string, completed: boolean) =>
+		dispatch({ type: TODOS_ACTIONS.TOGGLE_COMPLETED, payload: { id, completed } });
 
 	// helper function
-	const completedCount = todos.filter((todo) => todo.completed).length;
+	const completedCount = React.useMemo(() => todos.filter((todo) => todo.completed).length, [todos]);
 	const activeCount = todos.length - completedCount;
 
 	const filteredTodos = todos.filter((todo) => {
